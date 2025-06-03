@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>چت‌بات هوشمند شایان (نسخه حرفه‌ای)</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Base Variables */
+        :root {
+            --primary-start: #4A90E2;
+            --primary-end: #6A7EE2;
+            --secondary-bg: #F0F2F5; /* A subtle light gray for body */
+            --container-bg: #FFFFFF; /* White for chat container */
+            --input-bg: #F5F7FA;     /* Slightly darker for input field */
+            --text-main: #2C3E50;    /* Dark blue-gray for main text */
+            --text-dim: #7F8C8D;     /* Muted gray for placeholder/dim text */
+            --border-light: rgba(0, 0, 0, 0.08);
+            --shadow-subtle: rgba(0, 0, 0, 0.08);
+            --gradient-main: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+            --message-user-bg: #E3EFFD; /* Light blue for user messages */
+            --message-bot-bg: var(--gradient-main);
+            --input-border-focus: var(--primary-start);
+            --code-bg: #F0F0F0; /* Light gray for inline code */
+            --code-text: #D6336C; /* Reddish for code text */
+            --pre-bg: #EAEAEA; /* Slightly darker for code blocks */
+        }
+
+        /* Base Styles */
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--secondary-bg);
+            color: var(--text-main);
+            direction: rtl;
+            overflow: hidden;
+            font-weight: 400;
+        }
+
+        .chat-container {
+            width: 95%;
+            max-width: 750px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 16px;
+            background: var(--container-bg);
+            box-shadow: 0 10px 40px var(--shadow-subtle);
+            overflow: hidden;
+            border: 1px solid var(--border-light);
+            transition: box-shadow 0.3s ease-out;
+        }
+
+        .chat-container:hover {
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Header Styles */
+        .chat-header {
+            padding: 1.5rem 2rem;
+            background: var(--gradient-main);
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between; /* Space out items */
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .chat-header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem; /* Space between icons */
+        }
+
+        .chat-header i {
+            font-size: 1.8rem;
+            color: white;
+            cursor: default; /* Changed to default as these are inactive */
+        }
+
+        /* Chat Box Styles */
+        .chat-box {
+            flex-grow: 1;
+            padding: 1.5rem 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse; /* New messages appear at bottom */
+            scroll-behavior: smooth;
+            background: var(--container-bg);
+            gap: 1rem; /* Space between messages */
+        }
+
+        /* Scrollbar Styles */
+        .chat-box::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-box::-webkit-scrollbar-track {
+            background: var(--container-bg);
+        }
+        .chat-box::-webkit-scrollbar-thumb {
+            background-color: var(--primary-start);
+            border-radius: 10px;
+            border: 2px solid var(--container-bg);
+        }
+
+        /* Message Styles */
+        .message {
+            max-width: 85%;
+            margin: 0.5rem 0; /* Adjusted margin */
+            padding: 1rem 1.4rem;
+            border-radius: 12px;
+            line-height: 1.8;
+            word-wrap: break-word;
+            box-shadow: 0 4px 10px var(--shadow-subtle);
+            animation: fadeInScale 0.4s ease-out forwards;
+            transform-origin: bottom;
+            opacity: 0;
+            position: relative;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .message.user {
+            background-color: var(--message-user-bg);
+            color: var(--text-main);
+            align-self: flex-start; /* User messages on the left (RTL) */
+            border-bottom-left-radius: 8px; /* Slightly different corner */
+        }
+
+        .message.bot {
+            background: var(--message-bot-bg);
+            color: white;
+            align-self: flex-end; /* Bot messages on the right (RTL) */
+            border-bottom-right-radius: 8px; /* Slightly different corner */
+        }
+
+        .message.temp-message {
+            opacity: 0.7;
+            font-style: italic;
+            background-color: rgba(74, 144, 226, 0.1); /* Lighter blue for temp messages */
+            color: var(--text-dim);
+            align-self: flex-end; /* Always on bot side */
+            font-size: 0.9em;
+            box-shadow: none;
+            animation: none; /* No animation for temp messages */
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            align-self: flex-end; /* Aligned with bot messages */
+            background-color: rgba(74, 144, 226, 0.1);
+            color: var(--text-main);
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            margin-top: 0.5rem;
+            max-width: 200px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            font-size: 0.9em;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary-start);
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(3) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Input Area Styles */
+        .chat-input-area {
+            display: flex;
+            gap: 1rem;
+            padding: 1.2rem 2rem;
+            background-color: var(--container-bg);
+            border-top: 1px solid var(--border-light);
+            position: relative;
+            align-items: center; /* Vertically align items */
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        .chat-input-area input[type="text"] {
+            flex: 1;
+            /* Adjusted padding to be slightly taller for better click area */
+            padding: 0.9rem 1.5rem;
+            min-height: 40px; /* Ensure minimum height matches buttons (adjusted) */
+            box-sizing: border-box; /* Include padding in height calculation */
+            border-radius: 25px;
+            border: 1px solid var(--border-light);
+            font-size: 1.05em;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.3s ease;
+            text-align: right; /* For RTL */
+        }
+
+        .chat-input-area input[type="text"]:focus {
+            border-color: var(--input-border-focus);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+            background-color: white; /* White on focus for better contrast */
+        }
+
+        ::placeholder {
+            color: var(--text-dim);
+            opacity: 0.8;
+        }
+
+        /* Button Styles (Small, Medium, Send) */
+        .chat-input-area button {
+            background: var(--gradient-main);
+            border: none;
+            border-radius: 10px; /* Adjusted border-radius for smaller size */
+            width: 40px; /* Adjusted width for smaller size */
+            height: 40px; /* Adjusted height for smaller size */
+            font-size: 1.2rem; /* Adjusted icon size for smaller buttons */
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .chat-input-area button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-input-area button:disabled {
+            background: #CCCCCC;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .chat-input-area button.active {
+            background: linear-gradient(135deg, #FF6B6B, #EE5253); /* Red gradient for active mic */
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+        }
+
+        /* File Input Wrapper (Small) */
+        .file-input-wrapper {
+            position: relative;
+            width: 40px; /* Adjusted width for smaller size */
+            height: 40px; /* Adjusted height for smaller size */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--gradient-main);
+            border-radius: 10px; /* Adjusted border-radius */
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .file-input-wrapper:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-input-wrapper i {
+            color: white;
+            font-size: 1.2rem; /* Adjusted icon size */
+            pointer-events: none; /* Allows click to pass to input */
+        }
+
+        /* Footer */
+        .footer-text {
+            text-align: center;
+            padding: 0.8rem;
+            font-size: 0.85em;
+            color: var(--text-dim);
+            background-color: var(--container-bg);
+            border-top: 1px solid var(--border-light);
+        }
+        .footer-text a {
+            color: var(--primary-start);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .footer-text a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .chat-header {
+                padding: 1rem 1.2rem;
+                font-size: 1.3rem;
+            }
+
+            .chat-input-area {
+                padding: 0.8rem 1rem;
+                gap: 0.8rem;
+            }
+
+            .chat-input-area input[type="text"] {
+                padding: 0.6rem 1rem; /* Further reduced padding */
+                font-size: 0.95em;
+                min-height: 35px; /* Adjusted for smaller buttons */
+            }
+
+            .chat-input-area button,
+            .file-input-wrapper {
+                width: 35px; /* Even smaller for mobile */
+                height: 35px; /* Even smaller for mobile */
+                border-radius: 8px; /* Slightly less rounded */
+                font-size: 1.1rem; /* Smaller icon size for mobile */
+            }
+
+            .message {
+                max-width: 95%;
+                padding: 0.8rem 1rem;
+                margin: 0.4rem 0;
+            }
+
+            .chat-box {
+                padding: 1rem 1.2rem;
+            }
+        }
+
+        /* Markdown Styles */
+        .message strong {
+            color: var(--primary-end);
+            font-weight: 700;
+        }
+
+        .message em {
+            font-style: italic;
+            color: var(--primary-start);
+        }
+
+        .message code {
+            background-color: var(--code-bg);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-family: 'Fira Code', 'monospace'; /* Recommended for code */
+            font-size: 0.9em;
+            color: var(--code-text);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            white-space: pre-wrap; /* Wrap long code lines */
+            word-break: break-word; /* Break words */
+        }
+
+        .message pre {
+            background-color: var(--pre-bg);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            overflow-x: auto;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            font-family: 'Fira Code', 'monospace';
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .message pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--text-main);
+            display: block; /* Make sure code block fills pre */
+            white-space: pre; /* Preserve whitespace in code blocks */
+            word-break: normal; /* Normal word breaking in code blocks */
+        }
+
+        .message img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: block;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .file-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: rgba(255, 255, 255, 0.2); /* For bot messages */
+            border-radius: 8px;
+            text-decoration: none;
+            color: inherit;
+            transition: background-color 0.2s ease;
+            font-size: 0.9em;
+        }
+
+        .message.user .file-link {
+            background-color: rgba(0, 0, 0, 0.05); /* For user messages */
+            color: var(--text-main);
+        }
+
+        .file-link:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .message.user .file-link:hover {
+             background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .file-link i {
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <i class="fas fa-robot"></i>
+                چت‌بات هوشمند شایان
+            </div>
+            <div class="chat-header-right">
+                <i class="fas fa-phone-alt" title="تماس صوتی (غیرفعال در این نسخه)"></i>
+                <i class="fas fa-video" title="تماس تصویری (غیرفعال در این نسخه)"></i>
+            </div>
+        </div>
+        <div class="chat-box" id="chat-box">
+            </div>
+        <div class="chat-input-area">
+            <input type="text" id="user-input" placeholder="پیام خود را بنویسید..." autofocus title="پیام متنی خود را وارد کنید" />
+
+            <div class="file-input-wrapper" title="ارسال فایل یا تصویر">
+                <input type="file" id="file-input" accept="image/*, .pdf, .txt, .zip" />
+                <i class="fas fa-paperclip"></i>
+            </div>
+
+            <button id="mic-btn" title="ورودی صوتی (میکروفون)">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button id="send-btn" title="ارسال پیام">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+        <div class="footer-text">
+            ساخته شده توسط شایان شعاعی | Powered by <a href="https://openrouter.ai/" target="_blank">OpenRouter</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+    <script>
+        // --- Configuration ---
+        const CONFIG = {
+            API_KEY: "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", // !!! حتماً این را با کلید API خود جایگزین کنید !!!
+            API_URL: "https://openrouter.ai/api/v1/chat/completions",
+            MODEL: 'gpt-4o', // Model for general chat and vision. For image generation, consider 'stabilityai/stable-diffusion-xl' or 'dall-e-3' if available/suitable.
+            IMAGE_GENERATION_MODEL: 'stabilityai/stable-diffusion-xl', // Specific model for image generation requests
+            MAX_HISTORY: 10, // Max messages to keep in conversation history (excluding initial message)
+            MAX_FILE_SIZE_MB: 5 // Maximum allowed file size for uploads
+        };
+
+        // --- DOM Elements Cache ---
+        const elements = {
+            chatBox: document.getElementById('chat-box'),
+            userInput: document.getElementById('user-input'),
+            sendBtn: document.getElementById('send-btn'),
+            micBtn: document.getElementById('mic-btn'),
+            fileInput: document.getElementById('file-input')
+        };
+
+        // --- Global State Management ---
+        const state = {
+            // Initial message from the assistant
+            conversationHistory: [{
+                role: 'assistant',
+                content: 'سلام! چطور می‌تونم کمکتون کنم؟'
+            }],
+            typingIndicator: null, // Holds the typing indicator DOM element
+            speechRecognition: null, // Holds the Web Speech API recognition object
+            isMicActive: false // Tracks microphone active state
+        };
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', initializeChat);
+
+        function initializeChat() {
+            addMessageToUI(state.conversationHistory[0].content, 'bot'); // Display initial bot message
+            setupSpeechRecognition(); // Initialize speech recognition
+            setupEventListeners(); // Attach all event listeners
+            updateSendButtonState(); // Initial state for send button
+        }
+
+        function setupEventListeners() {
+            elements.sendBtn.addEventListener('click', () => sendMessage());
+            elements.userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { // Allow Shift+Enter for new line
+                    e.preventDefault(); // Prevent default new line
+                    sendMessage();
+                }
+            });
+            elements.micBtn.addEventListener('click', toggleVoiceRecognition);
+            elements.fileInput.addEventListener('change', handleFileUpload);
+            elements.userInput.addEventListener('input', updateSendButtonState); // Enable/disable send button
+        }
+
+        // --- Core Send Message Logic ---
+        async function sendMessage(fileData = null) {
+            const messageText = elements.userInput.value.trim();
+
+            if (!messageText && !fileData) return; // Don't send empty messages or files
+
+            clearTemporaryMessages(); // Remove any previous temporary messages
+
+            // Handle developer-related questions locally without API call
+            if (checkDeveloperQuestion(messageText)) {
+                handleDeveloperQuestion(messageText);
+                return;
+            }
+
+            try {
+                // Prepare UI: add user message, clear input, show typing indicator
+                prepareUIForNewMessage(messageText, fileData);
+                setControlsDisabled(true);
+                showTypingIndicator();
+
+                let response;
+                if (messageText.toLowerCase().startsWith('تصویر:')) {
+                    const prompt = messageText.substring('تصویر:'.length).trim();
+                    if (prompt) {
+                        response = await callImageGenerationAPI(prompt);
+                    } else {
+                        throw new Error('برای تولید تصویر، باید یک متن توصیفی وارد کنید. مثال: "تصویر: یک گربه خندان"');
+                    }
+                } else {
+                    response = await callChatAPI(messageText, fileData);
+                }
+
+                handleAPIResponse(response, messageText.toLowerCase().startsWith('تصویر:')); // Pass a flag for image response handling
+            } catch (error) {
+                handleError(error); // Display error to user
+            } finally {
+                hideTypingIndicator(); // Always hide typing indicator
+                resetControls(); // Re-enable controls
+                elements.userInput.focus(); // Keep focus on input
+            }
+        }
+
+        // --- API Communication ---
+        async function callChatAPI(messageText, fileData) {
+            const messagesForAPI = buildMessagesForAPI(messageText, fileData);
+
+            const response = await fetch(CONFIG.API_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + CONFIG.API_KEY,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.href, // Required by OpenRouter
+                    'X-Title': "Shayan's Smart Chatbot" // Required by OpenRouter
+                },
+                body: JSON.stringify({
+                    model: CONFIG.MODEL,
+                    messages: messagesForAPI,
+                    max_tokens: 1000
+                })
+            });
+
+            if (!response.ok) {
+                const errorDetails = await response.text();
+                throw new Error(parseAPIError(response.status, errorDetails));
+            }
+
+            return await response.json();
+        }
+
+        async function callImageGenerationAPI(prompt) {
+            const messagesForAPI = [{ role: 'user', content: prompt }]; // Simple message for image generation API
+
+            const response = await fetch(CONFIG.API_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + CONFIG.API_KEY,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': "Shayan's Smart Chatbot"
+                },
+                body: JSON.stringify({
+                    model: CONFIG.IMAGE_GENERATION_MODEL, // Use specific image generation model
+                    messages: messagesForAPI
+                })
+            });
+
+            if (!response.ok) {
+                const errorDetails = await response.text();
+                throw new Error(parseAPIError(response.status, errorDetails));
+            }
+            return await response.json();
+        }
+
+
+        // --- Helper Functions for API & UI ---
+
+        /**
+         * Prepares conversation history for API call.
+         * Handles multimodal input (text + image).
+         * @param {string} messageText - The user's text message.
+         * @param {Object} fileData - Contains file details (url, type, name).
+         * @returns {Array} Array of message objects for the API.
+         */
+        function buildMessagesForAPI(messageText, fileData) {
+            let userMessageContent;
+
+            if (fileData) {
+                if (fileData.type.startsWith('image/')) {
+                    // For image files, construct a multimodal message
+                    userMessageContent = [
+                        { type: "text", text: messageText || "این تصویر رو تحلیل کن:" },
+                        { type: "image_url", image_url: { url: fileData.url, detail: "high" } }
+                    ];
+                } else {
+                    // For other file types, append file info to text message
+                    userMessageContent = `${messageText}\n\n**فایل پیوست شده:** ${fileData.name}`;
+                }
+            } else {
+                userMessageContent = messageText;
+            }
+
+            // Add the new user message to history
+            state.conversationHistory.push({ role: 'user', content: userMessageContent });
+
+            // Trim history to maintain a reasonable context size
+            if (state.conversationHistory.length > CONFIG.MAX_HISTORY + 1) { // +1 for the initial bot message
+                state.conversationHistory.splice(1, state.conversationHistory.length - (CONFIG.MAX_HISTORY + 1));
+            }
+
+            // API expects messages in chronological order (oldest first)
+            return state.conversationHistory;
+        }
+
+        /**
+         * Updates the UI before sending a message.
+         * @param {string} messageText - The user's text message.
+         * @param {Object} fileData - Contains file details (url, type, name).
+         */
+        function prepareUIForNewMessage(messageText, fileData) {
+            if (fileData) {
+                const type = fileData.type.startsWith('image/') ? 'image' : 'file';
+                // Add the actual file/image to the UI
+                addMessageToUI(fileData.url, 'user', type);
+
+                // If user also typed a message, add it as a separate text message
+                if (messageText) {
+                    addMessageToUI(messageText, 'user', 'text');
+                }
+
+                addMessageToUI("در حال تحلیل و پردازش...", 'bot', 'text', true);
+            } else {
+                addMessageToUI(messageText, 'user', 'text');
+            }
+            elements.userInput.value = '';
+            updateSendButtonState(); // Update state after clearing input
+        }
+
+        /**
+         * Processes the API response and updates the UI.
+         * @param {Object} data - The JSON response from the API.
+         * @param {boolean} isImageResponse - Flag to indicate if this is an image generation response.
+         */
+        function handleAPIResponse(data, isImageResponse = false) {
+            clearTemporaryMessages(); // Remove processing messages
+
+            let replyContent;
+            let messageType = 'text';
+
+            if (isImageResponse && data.choices?.[0]?.message?.content) {
+                // For image generation, the content might be a URL or structured text
+                // OpenRouter models often return content like "![image](URL)" or just "URL"
+                const content = data.choices[0].message.content;
+                const imageUrlMatch = content.match(/\!\[.*?\]\((https?:\/\/[^\s]+)\)/) || content.match(/(https?:\/\/[^\s]+)/);
+
+                if (imageUrlMatch && imageUrlMatch[1]) {
+                    replyContent = imageUrlMatch[1];
+                    messageType = 'image';
+                    addMessageToUI("تصویر شما ساخته شد:", 'bot'); // Add a descriptive text message first
+                } else {
+                    replyContent = content || "تصویری ساخته نشد یا فرمت پاسخ نامعتبر است.";
+                    messageType = 'text';
+                }
+            } else {
+                replyContent = data.choices?.[0]?.message?.content || "پاسخی دریافت نشد.";
+                messageType = 'text';
+            }
+
+            addMessageToUI(replyContent, 'bot', messageType);
+
+            // Only add text responses to history to avoid issues with large image URLs
+            if (messageType === 'text') {
+                state.conversationHistory.push({ role: 'assistant', content: replyContent });
+                speak(cleanTextForSpeech(replyContent)); // Speak the bot's reply
+            } else if (messageType === 'image' && !isImageResponse) { // If a regular chat API returns an image URL for some reason
+                // Consider adding a placeholder text to history if the image URL is too long
+                state.conversationHistory.push({ role: 'assistant', content: "پاسخ شامل یک تصویر بود." });
+            }
+        }
+
+
+        /**
+         * Handles and displays errors to the user.
+         * @param {Error} error - The error object.
+         */
+        function handleError(error) {
+            console.error("Chatbot Error:", error);
+            clearTemporaryMessages();
+            addMessageToUI(`متاسفانه خطایی رخ داد: ${error.message || 'خطای ناشناخته'}`, 'bot');
+        }
+
+        // --- UI Rendering Functions ---
+
+        /**
+         * Adds a new message to the chat UI.
+         * @param {string} content - The message text or file URL.
+         * @param {string} sender - 'user' or 'bot'.
+         * @param {string} type - 'text', 'image', or 'file'.
+         * @param {boolean} isTemporary - If true, message can be cleared later.
+         */
+        function addMessageToUI(content, sender = 'bot', type = 'text', isTemporary = false) {
+            if (state.typingIndicator) {
+                state.typingIndicator.remove(); // Remove typing indicator if present
+                state.typingIndicator = null;
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender);
+            if (isTemporary) messageDiv.classList.add('temp-message');
+
+            if (type === 'text') {
+                // Use marked.js to parse Markdown content
+                messageDiv.innerHTML = marked.parse(content);
+            } else if (type === 'image') {
+                const img = document.createElement('img');
+                img.src = content;
+                img.alt = 'تصویر ارسال شده';
+                messageDiv.appendChild(img);
+
+                const link = createFileLink(content, 'fa-image', 'مشاهده تصویر');
+                messageDiv.appendChild(link);
+            } else { // type === 'file' (for non-image files)
+                const fileName = content.substring(content.lastIndexOf('/') + 1) || 'فایل پیوست';
+                const ext = fileName.split('.').pop().toLowerCase();
+                const iconClass = getFileIconClass(ext);
+                const link = createFileLink(content, iconClass, `مشاهده فایل: ${fileName}`);
+                messageDiv.appendChild(link);
+            }
+
+            elements.chatBox.prepend(messageDiv); // Add new messages to the top (due to flex-direction-reverse)
+            elements.chatBox.scrollTop = 0; // Scroll to the very top to see new message
+        }
+
+        /**
+         * Creates an anchor tag for file downloads/views.
+         * @param {string} url - The URL of the file.
+         * @param {string} iconClass - Font Awesome icon class.
+         * @param {string} text - Display text for the link.
+         * @returns {HTMLAnchorElement} The created link element.
+         */
+        function createFileLink(url, iconClass, text) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = "_blank"; // Open in new tab
+            link.classList.add('file-link');
+
+            const icon = document.createElement('i');
+            icon.classList.add('fas', iconClass);
+            link.appendChild(icon);
+            link.appendChild(document.createTextNode(text));
+
+            return link;
+        }
+
+        /**
+         * Returns appropriate Font Awesome icon class based on file extension.
+         * @param {string} ext - File extension.
+         * @returns {string} Font Awesome icon class.
+         */
+        function getFileIconClass(ext) {
+            switch (ext) {
+                case 'pdf':
+                    return 'fa-file-pdf';
+                case 'doc':
+                case 'docx':
+                    return 'fa-file-word';
+                case 'xls':
+                case 'xlsx':
+                    return 'fa-file-excel';
+                case 'ppt':
+                case 'pptx':
+                    return 'fa-file-powerpoint';
+                case 'zip':
+                case 'rar':
+                case '7z':
+                    return 'fa-file-archive';
+                case 'txt':
+                    return 'fa-file-alt';
+                case 'mp3':
+                case 'wav':
+                case 'ogg':
+                    return 'fa-file-audio';
+                case 'mp4':
+                case 'avi':
+                case 'mov':
+                    return 'fa-file-video';
+                case 'js':
+                case 'html':
+                case 'css':
+                case 'py':
+                case 'java':
+                case 'c':
+                case 'cpp':
+                    return 'fa-file-code';
+                default:
+                    return 'fa-file'; // Generic file icon
+            }
+        }
+
+        /**
+         * Clears any temporary messages (e.g., "Processing...") from the UI.
+         */
+        function clearTemporaryMessages() {
+            const tempMessages = elements.chatBox.querySelectorAll('.temp-message');
+            tempMessages.forEach(msg => msg.remove());
+        }
+
+        /**
+         * Shows the typing indicator.
+         */
+        function showTypingIndicator() {
+            if (state.typingIndicator) return; // Prevent multiple indicators
+
+            state.typingIndicator = document.createElement('div');
+            state.typingIndicator.classList.add('typing-indicator');
+            state.typingIndicator.innerHTML = `
+                <span></span>
+                <span></span>
+                <span></span>
+            `;
+            elements.chatBox.prepend(state.typingIndicator); // Add to the top for flex-direction-reverse
+        }
+
+        /**
+         * Hides the typing indicator.
+         */
+        function hideTypingIndicator() {
+            if (state.typingIndicator) {
+                state.typingIndicator.remove();
+                state.typingIndicator = null;
+            }
+        }
+
+        /**
+         * Sets the disabled state of input controls.
+         * @param {boolean} disabled - True to disable, false to enable.
+         */
+        function setControlsDisabled(disabled) {
+            elements.userInput.disabled = disabled;
+            elements.sendBtn.disabled = disabled;
+            elements.micBtn.disabled = disabled;
+            elements.fileInput.disabled = disabled;
+            // Also update button visual state if needed
+            if (disabled) {
+                elements.sendBtn.style.opacity = '0.7';
+                elements.fileInput.parentElement.style.opacity = '0.7';
+            } else {
+                elements.sendBtn.style.opacity = '1';
+                elements.fileInput.parentElement.style.opacity = '1';
+            }
+        }
+
+        /**
+         * Resets controls after message send.
+         */
+        function resetControls() {
+            setControlsDisabled(false);
+            updateSendButtonState(); // Re-evaluate send button state based on input content
+        }
+
+        /**
+         * Updates the state of the send button based on user input.
+         * The button is active only if there's text in the input field.
+         */
+        function updateSendButtonState() {
+            const isEmpty = elements.userInput.value.trim() === '';
+            // Only disable send button if input is empty AND mic is not active
+            elements.sendBtn.disabled = isEmpty && !state.isMicActive;
+            elements.sendBtn.style.background = isEmpty ? 'var(--text-dim)' : 'var(--gradient-main)';
+        }
+
+        /**
+         * Parses API error details from the response.
+         * @param {number} status - HTTP status code.
+         * @param {string} errorText - Raw error response text.
+         * @returns {string} A user-friendly error message.
+         */
+        function parseAPIError(status, errorText) {
+            let message = `خطا در برقراری ارتباط با سرور (${status}).`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                if (errorJson.error && errorJson.error.message) {
+                    message = errorJson.error.message;
+                } else if (errorJson.message) { // OpenRouter specific
+                    message = errorJson.message;
+                }
+            } catch (e) {
+                // Not a JSON error, use raw text or default message
+            }
+            if (status === 401) {
+                message = "کلید API نامعتبر است. لطفاً آن را بررسی کنید.";
+            } else if (status === 429) {
+                message = "محدودیت نرخ (Rate Limit) اعمال شده. لطفاً چند لحظه دیگر امتحان کنید.";
+            } else if (status >= 500) {
+                message = "مشکل در سرور OpenRouter. لطفاً بعداً امتحان کنید.";
+            }
+            return message;
+        }
+
+        // --- File Upload Logic ---
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > CONFIG.MAX_FILE_SIZE_MB * 1024 * 1024) {
+                alert(`حجم فایل نباید بیشتر از ${CONFIG.MAX_FILE_SIZE_MB} مگابایت باشد.`);
+                elements.fileInput.value = ''; // Clear selected file
+                return;
+            }
+
+            // Read the file as a Data URL for display and API (if image)
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const fileData = {
+                    url: e.target.result, // Base64 or data URL
+                    type: file.type,
+                    name: file.name
+                };
+                sendMessage(fileData);
+            };
+            reader.onerror = (e) => {
+                console.error("File reading error:", e);
+                alert("خطا در خواندن فایل.");
+            };
+            reader.readAsDataURL(file); // For images, Base64 is usually needed for API
+        }
+
+        // --- Speech Recognition Logic ---
+        function setupSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window)) {
+                console.warn("Web Speech API is not supported in this browser. Microphone button will be disabled.");
+                elements.micBtn.disabled = true;
+                elements.micBtn.title = "میکروفون (پشتیبانی نمی‌شود)";
+                return;
+            }
+
+            state.speechRecognition = new webkitSpeechRecognition();
+            state.speechRecognition.continuous = false; // Capture single utterance
+            state.speechRecognition.interimResults = false; // Only return final results
+            state.speechRecognition.lang = 'fa-IR'; // Set language to Persian
+
+            state.speechRecognition.onstart = () => {
+                state.isMicActive = true;
+                elements.micBtn.classList.add('active');
+                elements.userInput.placeholder = "در حال گوش دادن...";
+                setControlsDisabled(true); // Disable other controls while listening
+                elements.micBtn.disabled = false; // Keep mic button enabled to stop it
+            };
+
+            state.speechRecognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                elements.userInput.value = transcript;
+                sendMessage(); // Send the transcribed text
+            };
+
+            state.speechRecognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+                let errorMessage = "خطا در تشخیص صدا.";
+                if (event.error === 'no-speech') {
+                    errorMessage = "صدایی تشخیص داده نشد. لطفاً دوباره امتحان کنید.";
+                } else if (event.error === 'not-allowed') {
+                    // This error occurs if the user denies microphone access or it's not allowed in file:// protocol
+                    errorMessage = "دسترسی به میکروفون داده نشد یا مرورگر اجازه آن را نداد. لطفاً مجوزها را بررسی کرده و اطمینان حاصل کنید که صفحه از طریق سرور (مثلاً http://localhost) باز شده است.";
+                } else if (event.error === 'network') {
+                    errorMessage = "مشکل شبکه در حین تشخیص صدا. اتصال خود را بررسی کنید.";
+                }
+                addMessageToUI(errorMessage, 'bot');
+                resetVoiceRecognitionState();
+            };
+
+            state.speechRecognition.onend = () => {
+                resetVoiceRecognitionState();
+            };
+        }
+
+        function toggleVoiceRecognition() {
+            if (state.isMicActive) {
+                state.speechRecognition.stop();
+            } else {
+                state.speechRecognition.start();
+            }
+        }
+
+        function resetVoiceRecognitionState() {
+            state.isMicActive = false;
+            elements.micBtn.classList.remove('active');
+            elements.userInput.placeholder = "پیام خود را بنویسید...";
+            resetControls(); // Re-enable other controls
+            updateSendButtonState(); // Ensure send button state is correct
+        }
+
+        // --- Text-to-Speech (TTS) Logic ---
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'fa-IR'; // Set language to Persian
+                utterance.rate = 1.1; // Slightly faster
+                utterance.pitch = 1; // Normal pitch
+
+                // Find a suitable Persian voice
+                const voices = speechSynthesis.getVoices();
+                const persianVoice = voices.find(voice => voice.lang === 'fa-IR');
+                if (persianVoice) {
+                    utterance.voice = persianVoice;
+                } else {
+                    console.warn("Persian voice not found. Using default voice.");
+                }
+
+                speechSynthesis.speak(utterance);
+            } else {
+                console.warn("Web Speech Synthesis API is not supported in this browser.");
+            }
+        }
+
+        function cleanTextForSpeech(text) {
+            // Remove markdown syntax for better speech output
+            let cleanedText = text.replace(/\*\*(.*?)\*\*/g, '$1'); // Remove bold
+            cleanedText = cleanedText.replace(/\*(.*?)\*/g, '$1'); // Remove italics
+            cleanedText = cleanedText.replace(/`(.*?)`/g, '$1'); // Remove inline code
+            cleanedText = cleanedText.replace(/```[\s\S]*?```/g, ''); // Remove code blocks
+            cleanedText = cleanedText.replace(/\[(.*?)\]\(.*?\)/g, '$1'); // Remove links, keep text
+            cleanedText = cleanedText.replace(/#+\s/g, ''); // Remove headers
+            cleanedText = cleanedText.replace(/-\s/g, ''); // Remove list bullets
+            cleanedText = cleanedText.replace(/>\s/g, ''); // Remove blockquotes
+            cleanedText = cleanedText.replace(/<br\s*\/?>/g, '. '); // Replace <br> with a pause
+
+            // Further clean-up for common Persian text issues for TTS
+            cleanedText = cleanedText.replace(/؟/g, '. '); // Replace question mark with a slight pause
+            cleanedText = cleanedText.replace(/!/g, '. '); // Replace exclamation with a slight pause
+            cleanedText = cleanedText.replace(/\./g, '. '); // Ensure full stop has space for pause
+            cleanedText = cleanedText.replace(/\s+/g, ' ').trim(); // Remove multiple spaces
+
+            return cleanedText;
+        }
+
+        // --- Local Developer Question Handling ---
+        function checkDeveloperQuestion(message) {
+            const lowerCaseMessage = message.toLowerCase();
+            return lowerCaseMessage.includes('سازنده') ||
+                   lowerCaseMessage.includes('توسعه دهنده') ||
+                   lowerCaseMessage.includes('کدنویس') ||
+                   lowerCaseMessage.includes('شایان') ||
+                   lowerCaseMessage.includes('شماره شایان') ||
+                   lowerCaseMessage.includes('ارتباط با شایان');
+        }
+
+        function handleDeveloperQuestion(message) {
+            clearTemporaryMessages(); // Remove any processing messages
+            const lowerCaseMessage = message.toLowerCase();
+            let reply = "من توسط **شایان شعاعی** توسعه داده شده‌ام.";
+
+            if (lowerCaseMessage.includes('شماره شایان') || lowerCaseMessage.includes('ارتباط با شایان')) {
+                reply += " برای ارتباط با ایشان می‌توانید از طریق [لینکدین](https://www.linkedin.com/in/shayanshoaei/) یا [گیت‌هاب](https://github.com/ShayanShoaei) اقدام کنید.";
+            } else if (lowerCaseMessage.includes('شایان') || lowerCaseMessage.includes('سازنده')) {
+                reply += " ایشان یک توسعه‌دهنده هوش مصنوعی و وب هستند.";
+            }
+
+            addMessageToUI(reply, 'bot');
+            state.conversationHistory.push({ role: 'assistant', content: reply });
+            speak(cleanTextForSpeech(reply));
+            resetControls();
+            elements.userInput.value = ''; // Clear input
+            elements.userInput.focus();
+        }
+    </script>
+</body>
+</html>
